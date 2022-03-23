@@ -59,7 +59,8 @@ module.exports = {
         include: [
           resolve("src"),
           resolve("test"),
-          resolve("node_modules/webpack-dev-server/client")
+          resolve("node_modules/webpack-dev-server/client"),
+          resolve("node_modules/_@ffmpeg_ffmpeg@0.10.1@@ffmpeg/ffmpeg/src")
         ]
       },
       {

@@ -56,17 +56,41 @@
         </el-upload>
       </div>
     </div>
-    <el-button @click="cobine">合成</el-button>
+    <div class="operation-list">
+      <el-button @click="cobineVideos">合成视频</el-button>
+      <el-button @click="cobineAudios">合成音频</el-button>
+      <el-button @click="clipVideo">裁剪视频</el-button>
+      <el-button @click="clipAudio">裁剪音频</el-button>
+      <el-button @click="combineAudioInVideo">合成音视频</el-button>
+      <el-button @click="combineImgInVideo">合成图片视频</el-button>
+    </div>
+    <div class="combine-result">
+      <video v-if="combinVideoeUrl" :src="combinVideoeUrl" controls></video>
+      <audio v-if="combineAudioUrl" :src="combineAudioUrl" controls></audio>
+    </div>
   </div>
 </template>
 
 <script type="text/ecmascript-6">
+// import Editor from '../fileEditor'
+import {
+  blobToArrayBuffer
+} from '../util'
+
+const { createFFmpeg } = require('@ffmpeg/ffmpeg')
+
+const PATH = 'static/ffmpeg-worker-mp4.js'
+
 export default {
   data () {
     return {
       videoList: [],
       audioList: [],
-      imgList: []
+      imgList: [],
+      ffmpeg: null,
+      //   editor: new Editor(),
+      combinVideoeUrl: '',
+      combineAudioUrl: ''
     }
   },
   methods: {
@@ -95,6 +119,7 @@ export default {
         default:
           console.log(type)
       }
+      this.getArrayBuffer(file, type)
     },
     handleRemove (type) {
       switch (type) {
@@ -111,8 +136,70 @@ export default {
           console.log(type)
       }
     },
-    cobine () {
-      console.log('合成')
+    cobineVideos () {},
+    cobineAudios () {},
+    async clipVideo () {
+      const ffmpeg = createFFmpeg({log: true})
+      const orginBuffer = await this.getArrayBuffer(this.videoList[0], 'video')
+      await ffmpeg.load()
+      ffmpeg.FS('writeFile', 'input.mp4', orginBuffer)
+      await ffmpeg.run('-ss', '20', '-i', 'input.mp4', '-acodec', 'copy', 'output.mp4')
+      const data = ffmpeg.FS('readFile', 'output.mp4')
+      this.combinVideoeUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }))
+    //   await this.editor.open({
+    //     workerPath: PATH,
+    //     mediaType: 'mp4'
+    //   })
+    //   const originBlob = this.getBlob(this.videoList[0], 'video')
+    //   const {blob: clippedBlob} = await this.editor.clip(originBlob, 5)
+    //   const url = await this.editor.toUrl(clippedBlob)
+    //   const el = this.createElement(url, 'video')
+    //   this.combinVideoeUrl = url
+    //   console.log(el)
+    //   this.editor.close()
+    },
+    async clipAudio () {
+    //   await this.editor.open({
+    //     workerPath: PATH,
+    //     mediaType: 'mp3'
+    //   })
+    //   console.log(this.audioList[0])
+    //   const originBlob = this.getBlob(this.audioList[0], 'audio')
+    //   const {blob: clippedBlob} = await this.editor.clip(originBlob, 15)
+    //   const url = await this.editor.toUrl(clippedBlob)
+    //   const el = this.createElement(url, 'audio')
+    //   this.combineAudioUrl = url
+    //   console.log(el)
+    //   this.editor.close()
+    },
+    combineAudioInVideo () {},
+    combineImgInVideo () {},
+    getBlob (file, type) {
+      let mime = type === 'video' ? 'video/mpeg' : type === 'audio' ? 'audio/mpeg' : 'image/jpeg'
+      const blob = new Blob([file.raw], {type: mime})
+      return blob
+    },
+    async getArrayBuffer (file, type) {
+      let mime = type === 'video' ? 'video/mpeg' : type === 'audio' ? 'audio/mpeg' : 'image/jpeg'
+      const blob = new Blob([file.raw], {type: mime})
+      const ab = await blobToArrayBuffer(blob)
+      return ab
+    },
+    createElement (url, type) {
+      switch (type) {
+        case 'video':
+          const vel = document.createElement('video')
+          vel.src = url
+          vel.controls = true
+          return vel
+        case 'audio':
+          const ael = document.createElement('audio')
+          ael.src = url
+          ael.controls = true
+          return ael
+        default:
+          console.log(type)
+      }
     }
   }
 }
